@@ -7,6 +7,11 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+// API (host: 'http://localhost:8080', method: 'GET', path: '/')
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
