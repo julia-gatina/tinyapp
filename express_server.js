@@ -3,7 +3,9 @@ const app = express();
 const PORT = 8080;
 
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
 app.set("view engine", "ejs");
 
@@ -20,7 +22,9 @@ app.get("/urls.json", (req, res) => {
 
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
+  const templateVars = {
+    urls: urlDatabase
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -31,20 +35,29 @@ app.get("/urls/new", (req, res) => {
 
 //testing POST request, url entered via the form
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  console.log(req.body); // Log the POST request body to the console
+  res.send("Ok"); // Respond with 'Ok' (we will replace this)
 });
 
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls/:shortURL')
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
-  const templateVars = { shortURL: shortURL, longURL: longURL};
+  const templateVars = {
+    shortURL: shortURL,
+    longURL: longURL
+  };
   res.render("urls_show", templateVars);
 });
 
-
+// Generate a Random ShortURL
+function generateRandomString() {
+  const generatedRandomString = Math.random().toString(16).substring(2,8);
+  console.log(result);
+}
 
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
 });
+
+generateRandomString();
