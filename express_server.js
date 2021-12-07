@@ -10,16 +10,6 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-// API (host: 'http://localhost:8080', method: 'GET', path: '/')
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-// API (host: 'http://localhost:8080', method: 'GET', path: '/hello')
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls.json')
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -31,6 +21,11 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// a GET Route to Show the Form, path /urls/new
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls/:shortURL')
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -40,5 +35,5 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`TinyApp server is listening on port ${PORT}!`);
 });
