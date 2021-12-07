@@ -29,6 +29,12 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//testing POST request, url entered via the form
+app.post("/urls", (req, res) => {
+  console.log(req.body);  // Log the POST request body to the console
+  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+});
+
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls/:shortURL')
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
@@ -36,6 +42,8 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: shortURL, longURL: longURL};
   res.render("urls_show", templateVars);
 });
+
+
 
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
