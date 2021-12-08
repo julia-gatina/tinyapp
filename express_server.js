@@ -65,11 +65,23 @@ app.get("/u/:urlToken", (req, res) => {
   }
 });
 
+// API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:urlToken')
+app.post("/urls/:urlToken", (req, res) => {
+  // 1. define token
+  const urlToken = req.params.urlToken;
+  // 2. define new url
+  const newLongURL = req.body.longURL;
+  // 3. assign new url to token
+  urlDatabase[urlToken] = newLongURL;
+  // 4. redireck back to /urls
+  res.redirect("/urls");
+});
+
 app.post("/urls/:urlToken/delete", (req, res) => {
   const urlToken = req.params.urlToken;
   delete urlDatabase[urlToken];
   res.redirect("/urls");
-})
+});
 
 // Generate a Random ShortURL
 function generateRandomString() {
