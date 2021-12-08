@@ -46,10 +46,7 @@ app.get("/urls/new", (req, res) => {
 //a route for POST request, url entered via the form and generated shortUrl added to urls database;
 app.post("/urls", (req, res) => {
   const urlToken = generateRandomString();
-  console.log('urlToken: ', urlToken);
-  console.log('long url: ', req.body.longURL)
   urlDatabase[urlToken] = req.body.longURL;
-  console.log(urlDatabase);
   res.redirect(`/u/${urlToken}`);
 });
 
@@ -74,6 +71,11 @@ app.get("/urls/:urlToken", (req, res) => {
   }
 });
 
+app.post("/urls/:urlToken/delete", (req, res) => {
+  const urlToken = req.params.urlToken;
+  delete urlDatabase[urlToken];
+  res.redirect("/urls");
+})
 
 // Generate a Random ShortURL
 function generateRandomString() {
