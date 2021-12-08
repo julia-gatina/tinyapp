@@ -53,12 +53,6 @@ app.post("/urls", (req, res) => {
 app.get("/u/:urlToken", (req, res) => {
   const urlToken = req.params.urlToken;
   const longURL = urlDatabase[urlToken];
-  res.redirect(longURL);
-});
-
-app.get("/urls/:urlToken", (req, res) => {
-  const urlToken = req.params.urlToken;
-  const longURL = urlDatabase[urlToken];
 
   if (longURL) {
     const templateVars = {
