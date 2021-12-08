@@ -1,24 +1,34 @@
-const express = require('express');
-const app = express();
 const PORT = 8080;
-
+const express = require('express');
+const morgan = require("morgan"); // => prints every request status etc to the console
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
 
+const app = express();
 app.set("view engine", "ejs");
 
+
+
+//
+// DATA
+//
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
-// API (host: 'http://localhost:8080', method: 'GET', path: '/urls.json')
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
+
+//
+// MIDDLEWARE (runs for every request)
+//
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(morgan("dev"));
+
+
+//
+// ROUTES (runs when matching run is found)
+//
+
 
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 app.get("/urls", (req, res) => {
@@ -33,31 +43,51 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-//testing POST request, url entered via the form
+//a route for POST request, url entered via the form and generated shortUrl added to urls database;
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  const urlToken = generateRandomString();
+  console.log('urlToken: ', urlToken);
+  console.log('long url: ', req.body.longURL)
+  urlDatabase[urlToken] = req.body.longURL;
+  console.log(urlDatabase);
+  res.redirect(`/u/${urlToken}`);
 });
 
-// API (host: 'http://localhost:8080', method: 'GET', path: '/urls/:shortURL')
-app.get("/urls/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
-  const templateVars = {
-    shortURL: shortURL,
-    longURL: longURL
-  };
-  res.render("urls_show", templateVars);
+app.get("/u/:urlToken", (req, res) => {
+  const urlToken = req.params.urlToken;
+  const longURL = urlDatabase[urlToken];
+  res.redirect(longURL);
 });
+
+app.get("/urls/:urlToken", (req, res) => {
+  const urlToken = req.params.urlToken;
+  const longURL = urlDatabase[urlToken];
+
+  if (longURL) {
+    const templateVars = {
+      shortURL: urlToken,
+      longURL: longURL
+    };
+    res.render("urls_show", templateVars);
+  } else {
+    res.send(`URL for given token: "${urlToken}" is not found. Try another one.`);
+  }
+});
+
 
 // Generate a Random ShortURL
 function generateRandomString() {
-  const generatedRandomString = Math.random().toString(16).substring(2,8);
-  console.log(result);
+  const generatedShortUrl = Math.random().toString(16).substring(2,8);
+  return generatedShortUrl;
+  
 }
+
+
+// API (host: 'http://localhost:8080', method: 'GET', path: '/urls/:shortURL')
+
+
 
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
 });
 
-generateRandomString();
