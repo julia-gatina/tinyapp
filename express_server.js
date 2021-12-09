@@ -2,6 +2,7 @@ const PORT = 8080;
 const express = require('express');
 const morgan = require("morgan"); // => prints every request status etc to the console
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
 
 const app = express();
 app.set("view engine", "ejs");
@@ -13,8 +14,8 @@ app.set("view engine", "ejs");
 //
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2.tn": "http://www.lighthouselabs.ca",
+  "9sm5xK.tn": "http://www.google.com"
 };
 
 
@@ -23,14 +24,16 @@ const urlDatabase = {
 //
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan("dev"));
+app.use(cookieParser());
 
 
 //
 // ROUTES (runs when matching run is found)
 //
 
-
+// My URLs page
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
+
 app.get("/urls", (req, res) => {
   const templateVars = {
     urls: urlDatabase
@@ -38,55 +41,67 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-// a GET Route to Show the Form, path /urls/new
+// Page with create new longURL form
+//API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
+
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-//a route for POST request, url entered via the form and generated shortUrl added to urls database;
+// Creating a new LongURL
+// API (host: 'http://localhost:8080', method: 'POST', path: '/urls')
+
 app.post("/urls", (req, res) => {
-  const urlToken = generateRandomString();
-  urlDatabase[urlToken] = req.body.longURL;
-  res.redirect(`/u/${urlToken}`);
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect(`/u/${shortURL}`);
 });
 
-app.get("/u/:urlToken", (req, res) => {
-  const urlToken = req.params.urlToken;
-  const longURL = urlDatabase[urlToken];
+// Redirect after creating a new LongURL
+// API (host: 'http://localhost:8080', method: 'get', path: '/u/:shortURL')
+
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL];
 
   if (longURL) {
     const templateVars = {
-      shortURL: urlToken,
+      shortURL: shortURL,
       longURL: longURL
     };
     res.render("urls_show", templateVars);
   } else {
-    res.send(`URL for given token: "${urlToken}" is not found. Try another one.`);
+    res.send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
 });
 
-// API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:urlToken')
-app.post("/urls/:urlToken", (req, res) => {
+// Edit an existing LongURL
+// API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL')
+
+app.post("/urls/:shortURL", (req, res) => {
   // 1. define token
-  const urlToken = req.params.urlToken;
+  const shortURL = req.params.shortURL;
   // 2. define new url
   const newLongURL = req.body.longURL;
   // 3. assign new url to token
-  urlDatabase[urlToken] = newLongURL;
+  urlDatabase[shortURL] = newLongURL;
   // 4. redireck back to /urls
   res.redirect("/urls");
 });
 
-app.post("/urls/:urlToken/delete", (req, res) => {
-  const urlToken = req.params.urlToken;
-  delete urlDatabase[urlToken];
+// DELETE an existing URL
+// API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL/delete')
+
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const shortURL = req.params.shortURL;
+  delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
 
-// Generate a Random ShortURL
+// Function to Generate a Random ShortURL
 function generateRandomString() {
   const generatedShortUrl = Math.random().toString(16).substring(2,8);
-  return generatedShortUrl;
+  return generatedShortUrl + '.tn';
   
 }
 
