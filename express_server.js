@@ -28,6 +28,11 @@ const userDatabase = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "abc"
+  },
+  "d00fe9": { 
+    id: 'd00fe9',
+    email: 'aaaa@123.com',
+    password: '123456' 
   }
 };
 
@@ -49,9 +54,9 @@ app.use(cookieParser());
 // API (host: 'http://localhost:8080', method: 'GET', path: '/register')
 
 app.get("/register", (req, res) => {
-  const cookie = req.cookies.user_id;
+  const user_id = req.cookies.user_id;
   const templateVars = {
-    user: userDatabase[cookie],
+    user: userDatabase[user_id],
     urls: urlDatabase
   };
   res.render("register", templateVars)
@@ -67,7 +72,7 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("email and password cannot be blank");
   // checking if email already exists  
-  } else if (emailLookup(email)) {
+  } else if (userLookupByEmail(email)) {
     return res.status(400).send("User with this email address already exists.")
   }
 
@@ -79,26 +84,47 @@ app.post("/register", (req, res) => {
   };
   res.cookie("user_id", id)
   res.redirect("/urls")
+  
 });
 
 // LOGIN 
 // API (host: 'http://localhost:8080', method: 'Get', path: '/login')
 app.get("/login", (req, res) => {
-  const cookie = req.cookies.user_id;
+  const user_id = req.cookies.user_id;
   const templateVars = {
-    user: userDatabase[cookie],
+    user: userDatabase[user_id],
     urls: urlDatabase
   };
   res.render("login", templateVars);
 });
 
 
-// LOGIN => After users enter their username
+// LOGIN => After users enter their email
 // API (host: 'http://localhost:8080', method: 'POST', path: '/login')
 
 app.post("/login", (req, res) => {
-  res.cookie("user_id", id)
-  res.redirect("/urls");
+  const email = req.body.email;
+  const password = req.body.password;
+  console.log("Email: ", email)
+  console.log("Password: ", password);
+  if (!email || !password) {
+    return res.status(400).send("email and password cannot be blank");
+  }
+
+  const foundUserObject = userLookupByEmail(email);
+
+  if (!foundUserObject) {
+    return res.status(403).send("This email is not found.");
+  }
+    // check password
+    if (foundUserObject.password === password) {
+      console.log("Found user object: ", foundUserObject);
+      res.cookie("user_id", foundUserObject.id)
+      res.redirect("/urls");
+    } else {
+      return res.status(403).send("Wrong password, please try again.")
+    }
+
 });
 
 // LOGOUT = > after user clicks logout button
@@ -113,9 +139,9 @@ app.post("/logout", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 
 app.get("/urls", (req, res) => {
-  const cookie = req.cookies.user_id;
+  const user_id = req.cookies.user_id;
   const templateVars = {
-    user: userDatabase[cookie],
+    user: userDatabase[user_id],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
@@ -125,9 +151,9 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
-  const cookie = req.cookies.user_id;
+  const user_id = req.cookies.user_id;
   const templateVars = {
-    user: userDatabase[cookie],
+    user: userDatabase[user_id],
   };
   res.render("urls_new", templateVars);
 });
@@ -191,15 +217,14 @@ const generateRandomString = function() {
 
 // function to check if email already exists in user database
 
-const emailLookup = function(email) {
-  let isEmailExists = false;
-
+const userLookupByEmail = function(email) {
   for (const key in userDatabase) {
-    if (userDatabase[key].email === email) {
-      isEmailExists = true;
+    const dbEntry = userDatabase[key];
+    if (dbEntry.email === email) {
+      return dbEntry;
     }
   }
-  return isEmailExists;
+  return null;
 };
 
 
