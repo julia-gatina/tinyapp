@@ -31,11 +31,28 @@ app.use(cookieParser());
 // ROUTES (runs when matching run is found)
 //
 
+// LOGIN => After users enter their username
+// API (host: 'http://localhost:8080', method: 'GET', path: '/login')
+
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect("/urls");
+})
+
+// LOGOUT = > after user clicks logout button
+// API (host: 'http://localhost:8080', method: 'GET', path: '/logout')
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls");
+})
+
+
 // My URLs page
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 
 app.get("/urls", (req, res) => {
   const templateVars = {
+    username: req.cookies["username"],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
@@ -45,7 +62,10 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars = {
+    username: req.cookies["username"],
+  };
+  res.render("urls_new", templateVars);
 });
 
 // Creating a new LongURL
@@ -66,6 +86,7 @@ app.get("/u/:shortURL", (req, res) => {
 
   if (longURL) {
     const templateVars = {
+      username: req.cookies["username"],
       shortURL: shortURL,
       longURL: longURL
     };
@@ -74,6 +95,7 @@ app.get("/u/:shortURL", (req, res) => {
     res.send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
 });
+
 
 // Edit an existing LongURL
 // API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL')
@@ -102,11 +124,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 function generateRandomString() {
   const generatedShortUrl = Math.random().toString(16).substring(2,8);
   return generatedShortUrl + '.tn';
-  
-}
-
-
-// API (host: 'http://localhost:8080', method: 'GET', path: '/urls/:shortURL')
+};
 
 
 
