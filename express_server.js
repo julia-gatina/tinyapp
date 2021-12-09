@@ -18,15 +18,15 @@ const urlDatabase = {
   "9sm5xK.tn": "http://www.google.com"
 };
 
-const userDatabase = { 
+const userDatabase = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "123"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "abc"
   }
 };
@@ -58,12 +58,20 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  // checking if email or passwords blank
   if (!email || !password) {
     return res.status(400).send("email and password cannot be blank");
+  // checking if email already exists  
+  } else if (emailLookup(email)) {
+    return res.status(400).send("User with this email address already exists.")
   }
-  // Adding a new user data to the database
-  userDatabase[id] = {id: id, email: email, password: password};
 
+  // Adding a new user data to the database
+  userDatabase[id] = {
+    id: id,
+    email: email,
+    password: password
+  };
   res.cookie("user_id", id)
   res.redirect("/urls")
 });
@@ -94,9 +102,6 @@ app.get("/urls", (req, res) => {
     user: userDatabase[cookie],
     urls: urlDatabase
   };
-  console.log("templatevars", templateVars);
-  console.log("Cookie", cookie);
-
   res.render("urls_index", templateVars);
 });
 
@@ -160,10 +165,25 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+// Helper FUNCTIONS
 // Function to Generate a Random ShortURL (used for shortURL and user ids)
+
 const generateRandomString = function() {
   const generatedShortUrl = Math.random().toString(16).substring(2, 8);
   return generatedShortUrl;
+};
+
+// function to check if email already exists in user database
+
+const emailLookup = function(email) {
+  let isEmailExists = false;
+
+  for (const key in userDatabase) {
+    if (userDatabase[key].email === email) {
+      isEmailExists = true;
+    }
+  }
+  return isEmailExists;
 };
 
 
