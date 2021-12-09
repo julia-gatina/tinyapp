@@ -31,20 +31,27 @@ app.use(cookieParser());
 // ROUTES (runs when matching run is found)
 //
 
+// REGISTER 
+// API (host: 'http://localhost:8080', method: 'GET', path: '/register')
+
+app.get("/register", (req, res) => {
+  res.render("register")
+});
+
 // LOGIN => After users enter their username
 // API (host: 'http://localhost:8080', method: 'GET', path: '/login')
 
 app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
   res.redirect("/urls");
-})
+});
 
 // LOGOUT = > after user clicks logout button
 // API (host: 'http://localhost:8080', method: 'GET', path: '/logout')
 app.post("/logout", (req, res) => {
   res.clearCookie('username');
   res.redirect("/urls");
-})
+});
 
 
 // My URLs page
