@@ -58,11 +58,13 @@ app.post("/register", (req, res) => {
   const id = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  if (!email || !password) {
+    return res.status(400).send("email and password cannot be blank");
+  }
   // Adding a new user data to the database
   userDatabase[id] = {id: id, email: email, password: password};
 
   res.cookie("user_id", id)
-  // console.log(userDatabase);
   res.redirect("/urls")
 });
 
@@ -134,7 +136,7 @@ app.get("/u/:shortURL", (req, res) => {
     };
     res.render("urls_show", templateVars);
   } else {
-    res.send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
+    return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
 });
 
@@ -158,7 +160,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-// Function to Generate a Random ShortURL
+// Function to Generate a Random ShortURL (used for shortURL and user ids)
 const generateRandomString = function() {
   const generatedShortUrl = Math.random().toString(16).substring(2, 8);
   return generatedShortUrl;
