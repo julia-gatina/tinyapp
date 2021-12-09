@@ -49,7 +49,12 @@ app.use(cookieParser());
 // API (host: 'http://localhost:8080', method: 'GET', path: '/register')
 
 app.get("/register", (req, res) => {
-  res.render("register")
+  const cookie = req.cookies.user_id;
+  const templateVars = {
+    user: userDatabase[cookie],
+    urls: urlDatabase
+  };
+  res.render("register", templateVars)
 });
 
 // Register => after user enters email and password
@@ -76,20 +81,31 @@ app.post("/register", (req, res) => {
   res.redirect("/urls")
 });
 
+// LOGIN 
+// API (host: 'http://localhost:8080', method: 'Get', path: '/login')
+app.get("/login", (req, res) => {
+  const cookie = req.cookies.user_id;
+  const templateVars = {
+    user: userDatabase[cookie],
+    urls: urlDatabase
+  };
+  res.render("login", templateVars);
+});
+
 
 // LOGIN => After users enter their username
-// API (host: 'http://localhost:8080', method: 'GET', path: '/login')
+// API (host: 'http://localhost:8080', method: 'POST', path: '/login')
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
+  res.cookie("user_id", id)
   res.redirect("/urls");
 });
 
 // LOGOUT = > after user clicks logout button
-// API (host: 'http://localhost:8080', method: 'GET', path: '/logout')
+// API (host: 'http://localhost:8080', method: 'POST', path: '/logout')
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect("/login");
+  res.redirect("login");
 });
 
 

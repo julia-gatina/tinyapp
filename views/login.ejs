@@ -12,9 +12,10 @@
   
   <%- include('partials/_header') %> 
 
-  <br><br>
+<br><br>
+
   <div class="row d-flex justify-content-center">
-    <form method="POST" action="/register">
+    <form method="POST" action="/login">
       <div class="form-group">
         <label for="exampleInputEmail1">Email address</label>
         <input type="email" name="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
@@ -23,7 +24,7 @@
         <label for="exampleInputPassword1">Password</label>
         <input type="password" name="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
       </div>
-      <button type="submit" class="btn btn-primary">Register</button>
+      <button type="submit" class="btn btn-primary">Login</button>
     </form>
   </div>
 
