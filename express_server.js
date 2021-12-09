@@ -18,11 +18,25 @@ const urlDatabase = {
   "9sm5xK.tn": "http://www.google.com"
 };
 
+const userDatabase = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "123"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "abc"
+  }
+};
 
 //
 // MIDDLEWARE (runs for every request)
 //
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 app.use(morgan("dev"));
 app.use(cookieParser());
 
@@ -37,6 +51,21 @@ app.use(cookieParser());
 app.get("/register", (req, res) => {
   res.render("register")
 });
+
+// Register => after user enters email and password
+// // API (host: 'http://localhost:8080', method: 'POST', path: '/register')
+app.post("/register", (req, res) => {
+  const id = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+  // Adding a new user data to the database
+  userDatabase[id] = {id: id, email: email, password: password};
+
+  res.cookie("user_id", id)
+  console.log(userDatabase);
+  res.redirect("/urls")
+});
+
 
 // LOGIN => After users enter their username
 // API (host: 'http://localhost:8080', method: 'GET', path: '/login')
@@ -79,7 +108,7 @@ app.get("/urls/new", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'POST', path: '/urls')
 
 app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString();
+  const shortURL = generateRandomString() + '.tn';
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/u/${shortURL}`);
 });
@@ -108,13 +137,9 @@ app.get("/u/:shortURL", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL')
 
 app.post("/urls/:shortURL", (req, res) => {
-  // 1. define token
   const shortURL = req.params.shortURL;
-  // 2. define new url
   const newLongURL = req.body.longURL;
-  // 3. assign new url to token
   urlDatabase[shortURL] = newLongURL;
-  // 4. redireck back to /urls
   res.redirect("/urls");
 });
 
@@ -128,14 +153,12 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 // Function to Generate a Random ShortURL
-function generateRandomString() {
-  const generatedShortUrl = Math.random().toString(16).substring(2,8);
-  return generatedShortUrl + '.tn';
+const generateRandomString = function() {
+  const generatedShortUrl = Math.random().toString(16).substring(2, 8);
+  return generatedShortUrl;
 };
-
 
 
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
 });
-
