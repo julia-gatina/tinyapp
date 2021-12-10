@@ -19,30 +19,21 @@ const urlDatabase = {
   },
   i3BoGr: {
       longURL: "https://www.google.ca",
-      userID: "aJ48lW"
+      userID: "d00fe9"
   }
 };
 
-// const urlDatabase = {
-//   "b2xVn2.tn": "http://www.lighthouselabs.ca",
-//   "9sm5xK.tn": "http://www.google.com"
-// };
 
 const userDatabase = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
+  "aJ48lW": {
+    userID: "aJ48lW",
+    email: "mytest@test.com",
     password: "123"
   },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
+  "d00fe9": {
+    userID: "d00fe9",
+    email: "tes@test.com",
     password: "abc"
-  },
-  "d00fe9": { 
-    id: 'd00fe9',
-    email: 'aaaa@123.com',
-    password: '123456' 
   }
 };
 
@@ -64,9 +55,9 @@ app.use(cookieParser());
 // API (host: 'http://localhost:8080', method: 'GET', path: '/register')
 
 app.get("/register", (req, res) => {
-  const user_id = req.cookies.user_id;
+  const userID = req.cookies.userID;
   const templateVars = {
-    user: userDatabase[user_id],
+    user: userDatabase[userID],
     urls: urlDatabase
   };
   res.render("register", templateVars)
@@ -85,14 +76,13 @@ app.post("/register", (req, res) => {
   } else if (userLookupByEmail(email)) {
     return res.status(400).send("User with this email address already exists.")
   }
-
   // Adding a new user data to the database
   userDatabase[id] = {
     id: id,
     email: email,
     password: password
   };
-  res.cookie("user_id", id)
+  res.cookie("userID", id)
   res.redirect("/urls")
   
 });
@@ -100,9 +90,9 @@ app.post("/register", (req, res) => {
 // LOGIN 
 // API (host: 'http://localhost:8080', method: 'Get', path: '/login')
 app.get("/login", (req, res) => {
-  const user_id = req.cookies.user_id;
+  const userID = req.cookies.userID;
   const templateVars = {
-    user: userDatabase[user_id],
+    user: userDatabase[userID],
     urls: urlDatabase
   };
   res.render("login", templateVars);
@@ -115,12 +105,10 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  console.log("Email: ", email)
-  console.log("Password: ", password);
+
   if (!email || !password) {
     return res.status(400).send("email and password cannot be blank");
   }
-
   const foundUserObject = userLookupByEmail(email);
 
   if (!foundUserObject) {
@@ -128,8 +116,7 @@ app.post("/login", (req, res) => {
   }
     // check password
     if (foundUserObject.password === password) {
-      console.log("Found user object: ", foundUserObject);
-      res.cookie("user_id", foundUserObject.id)
+      res.cookie("userID", foundUserObject.userID)
       res.redirect("/urls");
     } else {
       return res.status(403).send("Wrong password, please try again.")
@@ -140,7 +127,7 @@ app.post("/login", (req, res) => {
 // LOGOUT = > after user clicks logout button
 // API (host: 'http://localhost:8080', method: 'POST', path: '/logout')
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  res.clearCookie('userID');
   res.redirect("login");
 });
 
@@ -149,9 +136,9 @@ app.post("/logout", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 
 app.get("/urls", (req, res) => {
-  const user_id = req.cookies.user_id;
+  const userID = req.cookies.userID;
   const templateVars = {
-    user: userDatabase[user_id],
+    user: userDatabase[userID],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
@@ -161,9 +148,10 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
+  const userID = req.cookies.userID;
   if (isUserLoggedin(req, res));
   const templateVars = {
-    user: userDatabase[user_id],
+    user: userDatabase[userID],
   };
   res.render("urls_new", templateVars);
 });
@@ -186,9 +174,9 @@ app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[shortURL].longURL;
 
   if (longURL) {
-    const id = req.cookies.user_id;
+    const userID = req.cookies.userID;
     const templateVars = {
-      user: userDatabase[id],
+      user: userDatabase[userID],
       shortURL: shortURL,
       longURL: longURL
     };
@@ -243,14 +231,38 @@ const userLookupByEmail = function(email) {
 
 // Function to check if user is logged in
 const isUserLoggedin = (req, res) => {
-const user_id = req.cookies.user_id;
-  if (user_id) {
+const userID = req.cookies.userID;
+  if (userID) {
     return true;
   } else {
   return res.redirect("/login");
   }
 };
 
+const urlsForUserID = function(userID) {
+  const userUrls = {};
+  for (const key in urlDatabase) {
+    if (userID === urlDatabase[key].userID) {
+      shortURL = urlDatabase[key];
+      longURL = urlDatabase[key].longURL;
+      userUrls = {shortURL, longURL};
+    }
+  }
+  return userUrls;
+};
+
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
 });
+
+// app.post("/urls/:id", (req, res) => {
+//   const userID = req.session.userID;
+//   const userUrls = urlsForUser(userID, urlDatabase);
+//   if (Object.keys(userUrls).includes(req.params.id)) {
+//     const shortURL = req.params.id;
+//     urlDatabase[shortURL].longURL = req.body.newURL;
+//     res.redirect('/urls');
+//   } else {
+//     res.status(401).send("You do not have authorization to edit this short URL.");
+//   }
+// });

@@ -24,6 +24,7 @@
         </tr>
       </thead>
       <tbody>
+        <% if (user) { %>
         <% for(const url in urls) { %>
           <tr>
             <td><a href="<%= urls[url].longURL %>"><%= url %></a></td>
@@ -38,6 +39,7 @@
             </td>
           </tr>
         <% } %>
+        <% }; %>
       </tbody>
     </table>
   </main>
