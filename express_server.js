@@ -2,7 +2,7 @@ const PORT = 8080;
 const express = require('express');
 const morgan = require("morgan"); // => prints every request status etc to the console
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 
 const bcrypt = require('bcryptjs');
 
@@ -15,13 +15,9 @@ app.set("view engine", "ejs");
 // DATA
 //
 const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW"
-  },
   i3BoGr: {
     longURL: "https://www.google.ca",
-    userID: "d00fe9"
+    userID: "d6e252"
   },
   e99551: {
     longURL: "https://www.w3schools.com",
@@ -31,17 +27,18 @@ const urlDatabase = {
 
 
 const userDatabase = {
-  "d00fe9": {
-    userID: "d00fe9",
-    email: "tes@test.com",
-    password: "abc"
+  d6e252: {
+    userID: 'd6e252',
+    email: 'test@test.com',
+    // password test
+    password: '$2a$10$DVgwkXyAQwkDa2xN37erDe.rQ5S1Tj/cTHde4YUK08MwENYTrMrk.'
   },
   '172b17': {
     userID: '172b17',
-    email: '123@123.com', //password 123
+    email: '123@123.com',
+    //password 123
     password: '$2a$10$ADVm5tdjMvLf/XOJ9tfQ7u0iVJzGFwOHgZVy8a4j8WE5GpAqvFhke'
   }
-
 };
 
 //
@@ -50,19 +47,35 @@ const userDatabase = {
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+
 app.use(morgan("dev"));
-app.use(cookieParser());
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['julia'],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 
 //
 // ROUTES (runs when matching run is found)
 //
 
+// Root directory -> redirects to urls if logged in or else to urls
+app.get("/", (req, res) => {
+  if (cookieHasUser(req.session.user_id, users)) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
+});
+
 // REGISTER 
 // API (host: 'http://localhost:8080', method: 'GET', path: '/register')
 
 app.get("/register", (req, res) => {
-  const userID = req.cookies.userID;
+  const userID = userDatabase[req.session.user_id];
   const templateVars = {
     user: userDatabase[userID],
     urls: urlDatabase
@@ -89,7 +102,7 @@ app.post("/register", (req, res) => {
     email: email,
     password: bcrypt.hashSync(password, 10)
   };
-  res.cookie("userID", newID)
+  req.session.user_id = "userID";
   res.redirect("/urls")
   console.log(userDatabase);
 
@@ -98,7 +111,7 @@ app.post("/register", (req, res) => {
 // LOGIN 
 // API (host: 'http://localhost:8080', method: 'Get', path: '/login')
 app.get("/login", (req, res) => {
-  const userID = req.cookies.userID;
+  const userID = userDatabase[req.session.user_id];
   const templateVars = {
     user: userDatabase[userID],
     urls: urlDatabase
@@ -124,7 +137,7 @@ app.post("/login", (req, res) => {
   }
   // check password
   if (bcrypt.compareSync(password, foundUserObject.password)) {
-    res.cookie("userID", foundUserObject.userID)
+    req.session.user_id = foundUserObject.userID;
     res.redirect("/urls");
   } else {
     return res.status(403).send("Wrong password, please try again.")
@@ -144,7 +157,7 @@ app.post("/logout", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 
 app.get("/urls", (req, res) => {
-  const userID = req.cookies.userID;
+  const userID = userDatabase[req.session.user_id];
   urls = urlsForUserID(userID);
   const templateVars = {
     user: userDatabase[userID],
@@ -157,7 +170,7 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
-  const userID = req.cookies.userID;
+  const userID = userDatabase[req.session.user_id];
   if (isUserLoggedin(req, res));
   const templateVars = {
     user: userDatabase[userID],
@@ -172,7 +185,7 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: req.cookies.userID
+    userID: userDatabase[req.session.user_id]
   }
   res.redirect(`/u/${shortURL}`);
 });
@@ -186,7 +199,7 @@ app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[shortURL].longURL;
 
   if (longURL) {
-    const userID = req.cookies.userID;
+    const userID = userDatabase[req.session.user_id];
     const templateVars = {
       user: userDatabase[userID],
       shortURL: shortURL,
@@ -243,7 +256,7 @@ const userLookupByEmail = function(email) {
 
 // Function to check if user is logged in
 const isUserLoggedin = (req, res) => {
-  const userID = req.cookies.userID;
+  const userID = userDatabase[req.session.user_id];
   if (userID) {
     return true;
   } else {
@@ -266,18 +279,8 @@ const urlsForUserID = function(userID) {
   return userUrls;
 };
 
+
+
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
 });
-
-// app.post("/urls/:id", (req, res) => {
-//   const userID = req.session.userID;
-//   const userUrls = urlsForUser(userID, urlDatabase);
-//   if (Object.keys(userUrls).includes(req.params.id)) {
-//     const shortURL = req.params.id;
-//     urlDatabase[shortURL].longURL = req.body.newURL;
-//     res.redirect('/urls');
-//   } else {
-//     res.status(401).send("You do not have authorization to edit this short URL.");
-//   }
-// });
