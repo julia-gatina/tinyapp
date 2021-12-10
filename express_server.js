@@ -161,10 +161,7 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
-  const user_id = req.cookies.user_id;
-  if (!user_id) {
-    return res.redirect("/login");
-  }
+  if (isUserLoggedin(req, res));
   const templateVars = {
     user: userDatabase[user_id],
   };
@@ -184,13 +181,14 @@ app.post("/urls", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'get', path: '/u/:shortURL')
 
 app.get("/u/:shortURL", (req, res) => {
+  if (isUserLoggedin(req, res));
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
 
   if (longURL) {
-    const cookie = req.cookies.user_id;
+    const id = req.cookies.user_id;
     const templateVars = {
-      user: userDatabase[cookie],
+      user: userDatabase[id],
       shortURL: shortURL,
       longURL: longURL
     };
@@ -207,7 +205,7 @@ app.get("/u/:shortURL", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const newLongURL = req.body.longURL;
-  urlDatabase[shortURL] = newLongURL;
+  urlDatabase[shortURL].longURL = newLongURL;
   res.redirect("/urls");
 });
 
@@ -215,9 +213,11 @@ app.post("/urls/:shortURL", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL/delete')
 
 app.post("/urls/:shortURL/delete", (req, res) => {
+  if (isUserLoggedin(req, res));
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect("/urls");
+  
 });
 
 // Helper FUNCTIONS
@@ -234,12 +234,22 @@ const userLookupByEmail = function(email) {
   for (const key in userDatabase) {
     const dbEntry = userDatabase[key];
     if (dbEntry.email === email) {
+      //returns whole user object
       return dbEntry;
     }
   }
   return null;
 };
 
+// Function to check if user is logged in
+const isUserLoggedin = (req, res) => {
+const user_id = req.cookies.user_id;
+  if (user_id) {
+    return true;
+  } else {
+  return res.redirect("/login");
+  }
+};
 
 app.listen(PORT, () => {
   console.log(`TinyApp server is listening on port ${PORT}!`);
