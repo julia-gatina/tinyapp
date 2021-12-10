@@ -5,8 +5,6 @@ const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
 const bcrypt = require('bcryptjs');
-const password = "purple-monkey-dinosaur";
-const hashedPassword = bcrypt.hashSync(password, 10);
 
 const app = express();
 app.set("view engine", "ejs");
@@ -24,21 +22,26 @@ const urlDatabase = {
   i3BoGr: {
     longURL: "https://www.google.ca",
     userID: "d00fe9"
+  },
+  e99551: {
+    longURL: "https://www.w3schools.com",
+    userID: '172b17'
   }
 };
 
 
 const userDatabase = {
-  "aJ48lW": {
-    userID: "aJ48lW",
-    email: "mytest@test.com",
-    password: "123"
-  },
   "d00fe9": {
     userID: "d00fe9",
     email: "tes@test.com",
     password: "abc"
+  },
+  '172b17': {
+    userID: '172b17',
+    email: '123@123.com', //password 123
+    password: '$2a$10$ADVm5tdjMvLf/XOJ9tfQ7u0iVJzGFwOHgZVy8a4j8WE5GpAqvFhke'
   }
+
 };
 
 //
@@ -81,13 +84,14 @@ app.post("/register", (req, res) => {
     return res.status(400).send("User with this email address already exists.")
   }
   // Adding a new user data to the database
-  userDatabase[userID] = {
-    id: newID,
+  userDatabase[newID] = {
+    userID: newID,
     email: email,
     password: bcrypt.hashSync(password, 10)
   };
-  res.cookie("userID", id)
+  res.cookie("userID", newID)
   res.redirect("/urls")
+  console.log(userDatabase);
 
 });
 
@@ -103,7 +107,7 @@ app.get("/login", (req, res) => {
 });
 
 
-// LOGIN => After users enter their email
+// LOGIN => After users enter their email and password
 // API (host: 'http://localhost:8080', method: 'POST', path: '/login')
 
 app.post("/login", (req, res) => {
@@ -111,7 +115,7 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
 
   if (!email || !password) {
-    return res.status(400).send("email and password cannot be blank");
+    return res.status(400).send("Email and / or password cannot be blank. Please try again.");
   }
   const foundUserObject = userLookupByEmail(email);
 
@@ -119,7 +123,7 @@ app.post("/login", (req, res) => {
     return res.status(403).send("This email is not found.");
   }
   // check password
-  if (foundUserObject.password === password) {
+  if (bcrypt.compareSync(password, foundUserObject.password)) {
     res.cookie("userID", foundUserObject.userID)
     res.redirect("/urls");
   } else {
