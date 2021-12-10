@@ -1,10 +1,13 @@
 // Function to check if user is logged in
-const isUserLoggedin = function(cookie, userDatabase) {
+const isUserLoggedin = function(req, res, userDatabase) {
+  const userID = [req.session.user_id];
   for (const user in userDatabase) {
-    if (cookie === user) {
+    if (userID === user) {
       return true;
+    } else {
+  return res.redirect("/login");
     }
-  } return false;
+  }
 };
 
     // function to check if email already exists in user database

@@ -64,18 +64,15 @@ app.use(cookieSession({
 // Root directory -> redirects to urls if logged in or else to urls
 app.get("/", (req, res) => {
   userID = req.session.user_id;
-  if (isUserLoggedin(userID, userDatabase)) {
-    res.redirect("/urls");
-  } else {
-    return res.redirect("login");
-  }
+  if (isUserLoggedin(req, res, userDatabase))
+    res.redirect("/urls")
 });
 
 // REGISTER 
 // API (host: 'http://localhost:8080', method: 'GET', path: '/register')
 
 app.get("/register", (req, res) => {
-  const userID = userDatabase[req.session.user_id];
+  const userID = [req.session.user_id];
   const templateVars = {
     user: userDatabase[userID],
     urls: urlDatabase
@@ -111,10 +108,10 @@ app.post("/register", (req, res) => {
 // LOGIN 
 // API (host: 'http://localhost:8080', method: 'Get', path: '/login')
 app.get("/login", (req, res) => {
-  const user = userDatabase[req.session.user_id];
+  const userID = [req.session.user_id];
   const templateVars = {
-    user: user,
-    urls: urlDatabase
+    user: userDatabase[userID],
+    urls: urlDatabase[userID]
   };
   res.render("login", templateVars);
 });
@@ -157,11 +154,10 @@ app.post("/logout", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 
 app.get("/urls", (req, res) => {
-  const user = userDatabase[req.session.user_id];
-  urls = getUserUrls([req.session.user_id], urlDatabase);
-  console.log("User id: ", req.session.user_id);
+  const userID = [req.session.user_id];
+  urls = getUserUrls(userID, urlDatabase);
   const templateVars = {
-    user: user,
+    user: userDatabase[userID],
     urls: urls
   };
   res.render("urls_index", templateVars);
@@ -171,10 +167,10 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
-  const user = userDatabase[req.session.user_id];
-  if (isUserLoggedin(req, res));
+  const userID = [req.session.user_id];
+  if (isUserLoggedin(req, res, userDatabase));
   const templateVars = {
-    user: user,
+    user: userDatabase[userID],
   };
   res.render("urls_new", templateVars);
 });
@@ -184,9 +180,10 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
+  
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: userDatabase[req.session.user_id]
+    userID: [req.session.user_id]
   }
   res.redirect(`/u/${shortURL}`);
 });
@@ -195,12 +192,12 @@ app.post("/urls", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'get', path: '/u/:shortURL')
 
 app.get("/u/:shortURL", (req, res) => {
-  if (isUserLoggedin(req, res));
+  if (isUserLoggedin(req, res, userDatabase));
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
 
   if (longURL) {
-    const userID = userDatabase[req.session.user_id];
+    const userID = [req.session.user_id];
     const templateVars = {
       user: userDatabase[userID],
       shortURL: shortURL,
@@ -227,7 +224,7 @@ app.post("/urls/:shortURL", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL/delete')
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (isUserLoggedin(req, res));
+  if (isUserLoggedin(req, res, userDatabase));
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect("/urls");
