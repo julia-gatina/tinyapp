@@ -12,11 +12,21 @@ app.set("view engine", "ejs");
 //
 // DATA
 //
-
 const urlDatabase = {
-  "b2xVn2.tn": "http://www.lighthouselabs.ca",
-  "9sm5xK.tn": "http://www.google.com"
+  b6UTxQ: {
+      longURL: "https://www.tsn.ca",
+      userID: "aJ48lW"
+  },
+  i3BoGr: {
+      longURL: "https://www.google.ca",
+      userID: "aJ48lW"
+  }
 };
+
+// const urlDatabase = {
+//   "b2xVn2.tn": "http://www.lighthouselabs.ca",
+//   "9sm5xK.tn": "http://www.google.com"
+// };
 
 const userDatabase = {
   "userRandomID": {
@@ -152,6 +162,9 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const user_id = req.cookies.user_id;
+  if (!user_id) {
+    return res.redirect("/login");
+  }
   const templateVars = {
     user: userDatabase[user_id],
   };
@@ -172,7 +185,7 @@ app.post("/urls", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
+  const longURL = urlDatabase[shortURL].longURL;
 
   if (longURL) {
     const cookie = req.cookies.user_id;
@@ -211,8 +224,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // Function to Generate a Random ShortURL (used for shortURL and user ids)
 
 const generateRandomString = function() {
-  const generatedShortUrl = Math.random().toString(16).substring(2, 8);
-  return generatedShortUrl;
+  const generatedRandomString = Math.random().toString(16).substring(2, 8);
+  return generatedRandomString;
 };
 
 // function to check if email already exists in user database
