@@ -14,12 +14,12 @@ app.set("view engine", "ejs");
 //
 const urlDatabase = {
   b6UTxQ: {
-      longURL: "https://www.tsn.ca",
-      userID: "aJ48lW"
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
   },
   i3BoGr: {
-      longURL: "https://www.google.ca",
-      userID: "d00fe9"
+    longURL: "https://www.google.ca",
+    userID: "d00fe9"
   }
 };
 
@@ -72,7 +72,7 @@ app.post("/register", (req, res) => {
   // checking if email or passwords blank
   if (!email || !password) {
     return res.status(400).send("email and password cannot be blank");
-  // checking if email already exists  
+    // checking if email already exists  
   } else if (userLookupByEmail(email)) {
     return res.status(400).send("User with this email address already exists.")
   }
@@ -84,7 +84,7 @@ app.post("/register", (req, res) => {
   };
   res.cookie("userID", id)
   res.redirect("/urls")
-  
+
 });
 
 // LOGIN 
@@ -114,13 +114,13 @@ app.post("/login", (req, res) => {
   if (!foundUserObject) {
     return res.status(403).send("This email is not found.");
   }
-    // check password
-    if (foundUserObject.password === password) {
-      res.cookie("userID", foundUserObject.userID)
-      res.redirect("/urls");
-    } else {
-      return res.status(403).send("Wrong password, please try again.")
-    }
+  // check password
+  if (foundUserObject.password === password) {
+    res.cookie("userID", foundUserObject.userID)
+    res.redirect("/urls");
+  } else {
+    return res.status(403).send("Wrong password, please try again.")
+  }
 
 });
 
@@ -137,9 +137,10 @@ app.post("/logout", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const userID = req.cookies.userID;
+  urls = urlsForUserID(userID);
   const templateVars = {
     user: userDatabase[userID],
-    urls: urlDatabase
+    urls: urls
   };
   res.render("urls_index", templateVars);
 });
@@ -160,8 +161,11 @@ app.get("/urls/new", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'POST', path: '/urls')
 
 app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString() + '.tn';
-  urlDatabase[shortURL] = req.body.longURL;
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies.userID
+  }
   res.redirect(`/u/${shortURL}`);
 });
 
@@ -205,7 +209,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
   delete urlDatabase[shortURL];
   res.redirect("/urls");
-  
+
 });
 
 // Helper FUNCTIONS
@@ -231,21 +235,24 @@ const userLookupByEmail = function(email) {
 
 // Function to check if user is logged in
 const isUserLoggedin = (req, res) => {
-const userID = req.cookies.userID;
+  const userID = req.cookies.userID;
   if (userID) {
     return true;
   } else {
-  return res.redirect("/login");
+    return res.redirect("/login");
   }
 };
 
 const urlsForUserID = function(userID) {
-  const userUrls = {};
+  let userUrls = {};
   for (const key in urlDatabase) {
     if (userID === urlDatabase[key].userID) {
       shortURL = urlDatabase[key];
       longURL = urlDatabase[key].longURL;
-      userUrls = {shortURL, longURL};
+      userUrls = {
+        shortURL,
+        longURL
+      };
     }
   }
   return userUrls;

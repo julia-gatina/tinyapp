@@ -24,22 +24,28 @@
         </tr>
       </thead>
       <tbody>
-        <% if (user) { %>
-        <% for(const url in urls) { %>
-          <tr>
-            <td><a href="<%= urls[url].longURL %>"><%= url %></a></td>
-            <td><a href="<%= urls[url].longURL %>"><%= urls[url].longURL %></a></td>
-            <td>
-              <a class="btn btn-outline-primary btn-sm" href="/u/<%=[url]%>">Edit</a> 
-            </td>
-            <td>
-              <form method="POST" action="/urls/<%=[url]%>/delete">
-                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-              </form>
-            </td>
-          </tr>
+        <% if (!user) { %>
+          <div class="alert alert-info" role="alert">
+              Please <a href="/login" class="alert-link" >Sign In</a> or <a href="/register" class="alert-link">Create an Account</a> to see your URLs.
+          </div>
+        <% } else { %>
+        <% for(let url in urls) { %>
+        <tr>
+          <td><%= url %></td>
+          <td><%= urls[url].longURL %></td>
+          <td>
+            <a href="/urls/<%= url %>">
+              <button type="button" class="btn btn-outline-primary">Edit</button>
+            </a>
+          </td>
+          <td>
+            <form method="POST" action="/urls/<%= url %>/delete">
+            <button type="submit" class="btn btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
         <% } %>
-        <% }; %>
+        <% } %>
       </tbody>
     </table>
   </main>
