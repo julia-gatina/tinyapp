@@ -27,13 +27,13 @@ const urlDatabase = {
 
 
 const userDatabase = {
-  d6e252: {
+  "d6e252": {
     userID: 'd6e252',
     email: 'test@test.com',
     // password test
     password: '$2a$10$DVgwkXyAQwkDa2xN37erDe.rQ5S1Tj/cTHde4YUK08MwENYTrMrk.'
   },
-  '172b17': {
+  "172b17": {
     userID: '172b17',
     email: '123@123.com',
     //password 123
@@ -64,7 +64,7 @@ app.use(cookieSession({
 
 // Root directory -> redirects to urls if logged in or else to urls
 app.get("/", (req, res) => {
-  if (cookieHasUser(req.session.user_id, users)) {
+  if (checkUserByCookie(req.session.user_id, userDatabase)) {
     res.redirect("/urls");
   } else {
     res.redirect("/login");
@@ -93,7 +93,7 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("Email and / or password cannot be blank. Please try again.");
     // checking if email already exists  
-  } else if (userLookupByEmail(email)) {
+  } else if (getUserByEmail(email, userDatabase)) {
     return res.status(400).send("User with this email address already exists.")
   }
   // Adding a new user data to the database
@@ -111,9 +111,9 @@ app.post("/register", (req, res) => {
 // LOGIN 
 // API (host: 'http://localhost:8080', method: 'Get', path: '/login')
 app.get("/login", (req, res) => {
-  const userID = userDatabase[req.session.user_id];
+  const user = userDatabase[req.session.user_id];
   const templateVars = {
-    user: userDatabase[userID],
+    user: user,
     urls: urlDatabase
   };
   res.render("login", templateVars);
@@ -130,7 +130,7 @@ app.post("/login", (req, res) => {
   if (!email || !password) {
     return res.status(400).send("Email and / or password cannot be blank. Please try again.");
   }
-  const foundUserObject = userLookupByEmail(email);
+  const foundUserObject = getUserByEmail(email, userDatabase);
 
   if (!foundUserObject) {
     return res.status(403).send("This email is not found.");
@@ -148,7 +148,7 @@ app.post("/login", (req, res) => {
 // LOGOUT = > after user clicks logout button
 // API (host: 'http://localhost:8080', method: 'POST', path: '/logout')
 app.post("/logout", (req, res) => {
-  res.clearCookie('userID');
+  req.session = null;
   res.redirect("login");
 });
 
@@ -157,10 +157,11 @@ app.post("/logout", (req, res) => {
 // API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
 
 app.get("/urls", (req, res) => {
-  const userID = userDatabase[req.session.user_id];
-  urls = urlsForUserID(userID);
+  const user = userDatabase[req.session.user_id];
+  urls = urlsForUserID([req.session.user_id], urlDatabase);
+  console.log("User id: ", req.session.user_id);
   const templateVars = {
-    user: userDatabase[userID],
+    user: user,
     urls: urls
   };
   res.render("urls_index", templateVars);
@@ -170,10 +171,10 @@ app.get("/urls", (req, res) => {
 //API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
 
 app.get("/urls/new", (req, res) => {
-  const userID = userDatabase[req.session.user_id];
+  const user = userDatabase[req.session.user_id];
   if (isUserLoggedin(req, res));
   const templateVars = {
-    user: userDatabase[userID],
+    user: user,
   };
   res.render("urls_new", templateVars);
 });
@@ -243,12 +244,12 @@ const generateRandomString = function() {
 
 // function to check if email already exists in user database
 
-const userLookupByEmail = function(email) {
+const getUserByEmail = function(email, userDatabase) {
   for (const key in userDatabase) {
-    const dbEntry = userDatabase[key];
-    if (dbEntry.email === email) {
+    const user = userDatabase[key];
+    if (user.email === email) {
       //returns whole user object
-      return dbEntry;
+      return user;
     }
   }
   return null;
@@ -264,21 +265,23 @@ const isUserLoggedin = (req, res) => {
   }
 };
 
-const urlsForUserID = function(userID) {
-  let userUrls = {};
-  for (const key in urlDatabase) {
-    if (userID === urlDatabase[key].userID) {
-      shortURL = urlDatabase[key];
-      longURL = urlDatabase[key].longURL;
-      userUrls = {
-        shortURL,
-        longURL
-      };
+const urlsForUserID = function(id, urlDatabase) {
+    const usersUrls = {};
+    for (const shortURL in urlDatabase) {
+      if (urlDatabase[shortURL].userID === id) {
+        usersUrls[shortURL] = urlDatabase[shortURL];
+      }
     }
-  }
-  return userUrls;
-};
+    return usersUrls;
+  };
 
+const checkUserByCookie = function(cookie, userDatabase) {
+  for (const user in userDatabase) {
+    if (cookie === user) {
+      return true;
+    }
+  } return false;
+};
 
 
 app.listen(PORT, () => {
