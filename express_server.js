@@ -4,6 +4,10 @@ const morgan = require("morgan"); // => prints every request status etc to the c
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 
+const bcrypt = require('bcryptjs');
+const password = "purple-monkey-dinosaur";
+const hashedPassword = bcrypt.hashSync(password, 10);
+
 const app = express();
 app.set("view engine", "ejs");
 
@@ -66,21 +70,21 @@ app.get("/register", (req, res) => {
 // Register => after user enters email and password
 // // API (host: 'http://localhost:8080', method: 'POST', path: '/register')
 app.post("/register", (req, res) => {
-  const id = generateRandomString();
+  const newID = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
   // checking if email or passwords blank
   if (!email || !password) {
-    return res.status(400).send("email and password cannot be blank");
+    return res.status(400).send("Email and / or password cannot be blank. Please try again.");
     // checking if email already exists  
   } else if (userLookupByEmail(email)) {
     return res.status(400).send("User with this email address already exists.")
   }
   // Adding a new user data to the database
-  userDatabase[id] = {
-    id: id,
+  userDatabase[userID] = {
+    id: newID,
     email: email,
-    password: password
+    password: bcrypt.hashSync(password, 10)
   };
   res.cookie("userID", id)
   res.redirect("/urls")
