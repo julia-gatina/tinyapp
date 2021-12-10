@@ -9,7 +9,7 @@ const bcrypt = require('bcryptjs');
 const app = express();
 app.set("view engine", "ejs");
 
-
+const { getUserByEmail, generateRandomString, isUserLoggedin, getUserUrls } = require("./helpers");
 
 //
 // DATA
@@ -24,7 +24,6 @@ const urlDatabase = {
     userID: '172b17'
   }
 };
-
 
 const userDatabase = {
   "d6e252": {
@@ -64,10 +63,11 @@ app.use(cookieSession({
 
 // Root directory -> redirects to urls if logged in or else to urls
 app.get("/", (req, res) => {
-  if (checkUserByCookie(req.session.user_id, userDatabase)) {
+  userID = req.session.user_id;
+  if (isUserLoggedin(userID, userDatabase)) {
     res.redirect("/urls");
   } else {
-    res.redirect("/login");
+    return res.redirect("login");
   }
 });
 
@@ -158,7 +158,7 @@ app.post("/logout", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const user = userDatabase[req.session.user_id];
-  urls = urlsForUserID([req.session.user_id], urlDatabase);
+  urls = getUserUrls([req.session.user_id], urlDatabase);
   console.log("User id: ", req.session.user_id);
   const templateVars = {
     user: user,
@@ -233,55 +233,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls");
 
 });
-
-// Helper FUNCTIONS
-// Function to Generate a Random ShortURL (used for shortURL and user ids)
-
-const generateRandomString = function() {
-  const generatedRandomString = Math.random().toString(16).substring(2, 8);
-  return generatedRandomString;
-};
-
-// function to check if email already exists in user database
-
-const getUserByEmail = function(email, userDatabase) {
-  for (const key in userDatabase) {
-    const user = userDatabase[key];
-    if (user.email === email) {
-      //returns whole user object
-      return user;
-    }
-  }
-  return null;
-};
-
-// Function to check if user is logged in
-const isUserLoggedin = (req, res) => {
-  const userID = userDatabase[req.session.user_id];
-  if (userID) {
-    return true;
-  } else {
-    return res.redirect("/login");
-  }
-};
-
-const urlsForUserID = function(id, urlDatabase) {
-    const usersUrls = {};
-    for (const shortURL in urlDatabase) {
-      if (urlDatabase[shortURL].userID === id) {
-        usersUrls[shortURL] = urlDatabase[shortURL];
-      }
-    }
-    return usersUrls;
-  };
-
-const checkUserByCookie = function(cookie, userDatabase) {
-  for (const user in userDatabase) {
-    if (cookie === user) {
-      return true;
-    }
-  } return false;
-};
 
 
 app.listen(PORT, () => {
