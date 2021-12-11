@@ -142,26 +142,29 @@ app.get("/u/:shortURL", (req, res) => {
 // POST /urls
 app.post("/urls", (req, res) => {
   const userID = req.session.user_id;
+  const user = userDatabase[userID];
   const shortURL = generateRandomString();
 
-  if (!userDatabase.userID) {
+  if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
-
+  
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: req.session.user_id
+    userID: userID
   }
   return res.redirect(`/urls/${shortURL}`);
+  
 });
 
 // POST /urls/:shortURL => Edit
 app.post("/urls/:shortURL", (req, res) => {
   const userID = req.session.user_id
+  const user = userDatabase[userID]
   const shortURL = req.params.shortURL;
   const newLongURL = req.body.longURL;
 
-  if (!userDatabase.userID) {
+  if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
   
@@ -177,9 +180,10 @@ app.post("/urls/:shortURL", (req, res) => {
 // POST /urls/:shortURL/delete => Delete
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userID = req.session.user_id;
+  const user = userDatabase[userID]
   const shortURL = req.params.shortURL;
 
-  if (!userDatabase.userID) {
+  if (!user) {
     return res.status(403).send("You are not authorised to delete a URL");
   }
   
@@ -192,12 +196,12 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 });
 
-
 // GET /login
 app.get("/login", (req, res) => {
   const userID = req.session.user_id;
+  const user = userDatabase[userID];
 
-  if (userDatabase.userID) {
+  if (user) {
     return res.redirect("/urls");
   }
 
@@ -215,7 +219,6 @@ app.get("/register", (req, res) => {
   if(userID) {
     return res.redirect("/urls");
   }
-
   return res.render("register", {user: null})
 });
 
