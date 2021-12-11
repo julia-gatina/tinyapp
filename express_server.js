@@ -66,7 +66,7 @@ app.use(cookieSession({
 // ROUTES (runs when matching run is found)
 //
 
-// GET / -> redirects to urls if logged in or else to urls
+// GET / -> redirects to urls if logged in or else to urls +
 app.get("/", (req, res) => {
   userID = req.session.user_id;
   if (!isUserLoggedIn(userID, userDatabase)) {
@@ -75,7 +75,7 @@ app.get("/", (req, res) => {
    res.redirect("/urls");
 });
 
-// GET /urls
+// GET /urls +
 app.get("/urls", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
@@ -101,26 +101,42 @@ app.get("/urls/new", (req, res) => {
     res.render("urls_new", templateVars);
 });
 
-// GET /urls/:shortURL
-
-
-// GET /u/:shortURL
-app.get("/u/:shortURL", (req, res) => {
+// GET /urls/:shortURL +
+app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   const userID = req.session.user_id;
   const user = userDatabase[userID];
+  
+  if (!user) {
+    return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
+  }
+
+  if (!urlDatabase[shortURL].userID === userID) {
+    return res.status(403).send('You are not authorized to edit this URL. <a href="/urls">Return to URLs.</a>.');
+  }
 
   if (!longURL) {
     return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
 
-    const templateVars = {
+  const templateVars = {
       user: user,
       shortURL: shortURL,
       longURL: longURL
     };
     res.render("urls_show", templateVars);
+});
+
+// GET /u/:shortURL +
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+
+  if (!longURL) {
+    return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
+  }
+  res.redirect(longURL);
 });
 
 // POST /urls
@@ -226,7 +242,7 @@ app.post("/register", (req, res) => {
 });
 
 
-// POST /logout
+// POST /logout +
 app.post("/logout", (req, res) => {
   req.session = null;
   return res.redirect("/urls");
