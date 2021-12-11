@@ -62,7 +62,7 @@ app.use(cookieSession({
 
 
 //
-// ROUTES (runs when matching run is found)
+// ROUTES (a route runs when matching run is found)
 //
 
 // GET / -> redirects to urls if logged in or else prompts to login
@@ -76,11 +76,12 @@ app.get("/", (req, res) => {
   res.redirect("/urls");
 });
 
-// GET /urls 
+// GET /urls (only for logged in users)
 app.get("/urls", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
 
+  // if user is not logged in, app send a msg to log in and will not show URLs
   if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to see the URLs.');
   }
@@ -90,39 +91,43 @@ app.get("/urls", (req, res) => {
     urls,
     user
   };
-
   res.render("urls_index", templateVars);
 });
 
-// GET /urls/new 
+// GET /urls/new (only for logged in users)
 app.get("/urls/new", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
 
+  // check is user is logged in, if not -> redirect to login page
   if (!user) {
     return res.redirect("/login");
   }
+
   const templateVars = {
     user
   };
   res.render("urls_new", templateVars);
 });
 
-// GET /urls/:shortURL
+// GET /urls/:shortURL (only for logged in users)
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
   const userID = req.session.user_id;
   const user = userDatabase[userID];
 
+  //If user not logged in, display a message to log in
   if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
 
+  //if a URL doesn't belong to this user, he can'e edit it
   if (!urlDatabase[shortURL].userID === userID) {
     return res.status(403).send('You are not authorized to edit this URL. <a href="/urls">Return to URLs.</a>.');
   }
 
+  // if url does not exists
   if (!longURL) {
     return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
@@ -140,22 +145,25 @@ app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
 
+  // error if URL is not found
   if (!longURL) {
     return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
   res.redirect(longURL);
 });
 
-// POST /urls
+// POST /urls (only for logged in users)
 app.post("/urls", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
   const shortURL = generateRandomString();
 
+  // check if user is logged in
   if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
 
+  //add new URL to database
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
     userID: userID
@@ -164,17 +172,19 @@ app.post("/urls", (req, res) => {
 
 });
 
-// POST /urls/:shortURL => Edit
+// POST /urls/:shortURL => Edit (only for logged in users)
 app.post("/urls/:shortURL", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
   const shortURL = req.params.shortURL;
   const newLongURL = req.body.longURL;
 
+  // check is user is logged in
   if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
 
+  // check if this URL belongs to the user
   const expectedUserID = urlDatabase[shortURL].userID;
   if (expectedUserID !== userID) {
     return res.status(403).send('You are not authorised to edit this URL. <a href="/urls">Return to URLs</a>.');
@@ -184,16 +194,18 @@ app.post("/urls/:shortURL", (req, res) => {
   return res.redirect("/urls");
 });
 
-// POST /urls/:shortURL/delete => Delete
+// POST /urls/:shortURL/delete => Delete (only for logged in users)
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
   const shortURL = req.params.shortURL;
 
+  // check if user is logged in
   if (!user) {
     return res.status(403).send("You are not authorised to delete a URL");
   }
 
+  // check if this URL belongs to the user
   const expectedUserID = urlDatabase[shortURL].userID;
   if (expectedUserID !== userID) {
     return res.status(403).send('You are not authorised to delete this URL. <a href="/urls">Return to URLs.</a>.');
@@ -208,6 +220,7 @@ app.get("/login", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
 
+  // if user is already logged in, redirect to /urls page
   if (user) {
     return res.redirect("/urls");
   }
@@ -223,6 +236,7 @@ app.get("/login", (req, res) => {
 app.get("/register", (req, res) => {
   const userID = req.session.user_id;
 
+  // if users already logged in redirect to /urls
   if (userID) {
     return res.redirect("/urls");
   }
@@ -234,11 +248,13 @@ app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
+  // check if email or password empty
   if (!email || !password) {
     return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>"');
   }
   const foundUserObject = getUserByEmail(email, userDatabase);
 
+  // check if email and password match
   if (!foundUserObject || !bcrypt.compareSync(password, foundUserObject.password)) {
     return res.status(403).send('Unvalid credentials. Please <a href="/login">try again.</a>');
   }
@@ -253,10 +269,12 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
+  // check if email or password empty
   if (!email || !password) {
     return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>');
   }
    
+  // check if this email already exists
   if (getUserByEmail(email, userDatabase)) {
     return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>')
   }
@@ -274,6 +292,7 @@ app.post("/register", (req, res) => {
 
 // POST /logout
 app.post("/logout", (req, res) => {
+  // clear cookies
   req.session = null;
   return res.redirect("/urls");
 });
