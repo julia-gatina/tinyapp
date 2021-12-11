@@ -40,6 +40,5 @@ const generateRandomString = function() {
 module.exports = {
   getUserByEmail,
   generateRandomString,
-  isUserLoggedIn,
   getUserUrls
 };
