@@ -1,6 +1,6 @@
 const res = require("express/lib/response");
 
-// function to fetch user data from database by email
+// function to fetch user data from database by email, returns whole user object.
 
 const getUserByEmail = function(email, userDatabase) {
   for (const key in userDatabase) {
@@ -13,7 +13,18 @@ const getUserByEmail = function(email, userDatabase) {
   return null;
 };
 
-// Function to get URLs that belong to a certain user, returns whole user object
+const urlDatabase = {
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "d6e252"
+  },
+  e99551: {
+    longURL: "https://www.w3schools.com",
+    userID: '172b17'
+  }
+};
+
+// Function to get URLs that belong to a certain user, returns an object.
 const getUserUrls = function(id, urlDatabase) {
   const usersUrls = {};
 
@@ -25,6 +36,7 @@ const getUserUrls = function(id, urlDatabase) {
   }
   return usersUrls;
 };
+
 
 
 // Function to Generate a Random ShortURL (used for shortURLs and user IDs)
