@@ -66,7 +66,7 @@ app.use(cookieSession({
 // ROUTES (runs when matching run is found)
 //
 
-// Root directory -> redirects to urls if logged in or else to urls
+// GET / -> redirects to urls if logged in or else to urls
 app.get("/", (req, res) => {
   userID = req.session.user_id;
   if (!isUserLoggedIn(userID, userDatabase)) {
@@ -75,46 +75,92 @@ app.get("/", (req, res) => {
    res.redirect("/urls");
 });
 
-// REGISTER 
-// API (host: 'http://localhost:8080', method: 'GET', path: '/register')
-
-app.get("/register", (req, res) => {
-  const userID = [req.session.user_id];
-  const templateVars = {
-    user: userDatabase[userID],
-    urls: urlDatabase
-  };
-  return res.render("register", templateVars)
-});
-
-// Register => after user enters email and password
-// // API (host: 'http://localhost:8080', method: 'POST', path: '/register')
-app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  // checking if email or passwords blank
-  if (!email || !password) {
-    return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>"');
-  } 
-  // checking if email already exists  
-  if (getUserByEmail(email, userDatabase)) {
-    return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>"')
+// GET /urls
+app.get("/urls", (req, res) => {
+  const userID = req.session.user_id;
+  const user = userDatabase[userID];
+  
+  if (!user) {
+    return res.status(403).send('Please <a href="/login">Login</a> to see the URLs');
   }
-  // Adding a new user data to the database
-  const newID = generateRandomString();
-  userDatabase[newID] = {
-    userID: newID,
-    email: email,
-    password: bcrypt.hashSync(password, 10)
-  };
-  req.session.user_id = "userID";
-  res.redirect("/urls");
+
+  const urls = getUserUrls(userID, urlDatabase);
+  const templateVars = {urls, user};
+  
+  res.render("urls_index", templateVars);
 });
 
-// LOGIN 
-// API (host: 'http://localhost:8080', method: 'Get', path: '/login')
+// GET /urls/new
+app.get("/urls/new", (req, res) => {
+  const userID = req.session.user_id;
+  const user = userDatabase[userID];
+  if (!isUserLoggedIn(userID, userDatabase)) {
+    return res.status(403).send('Please <a href="/login">Login</a> to be able to create new URLs.');
+  } 
+    const templateVars = { user }
+    res.render("urls_new", templateVars);
+});
+
+// GET /urls/:shortURL
+
+
+// GET /u/:shortURL
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL].longURL;
+  const userID = req.session.user_id;
+  const user = userDatabase[userID];
+
+  if (!longURL) {
+    return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
+  }
+
+    const templateVars = {
+      user: user,
+      shortURL: shortURL,
+      longURL: longURL
+    };
+    res.render("urls_show", templateVars);
+});
+
+// POST /urls
+app.post("/urls", (req, res) => {
+  const shortURL = generateRandomString();
+
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id
+  }
+  return res.redirect(`/u/${shortURL}`);
+});
+
+// POST /urls/:shortURL => Edit
+
+app.post("/urls/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const newLongURL = req.body.longURL;
+  urlDatabase[shortURL].longURL = newLongURL;
+  return res.redirect("/urls");
+});
+
+// POST /urls/:shortURL/delete => Delete
+
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const userID = req.session.user_id;
+  if (isUserLoggedIn(userID, userDatabase)) {
+    const shortURL = req.params.shortURL;
+    delete urlDatabase[shortURL];
+    return res.redirect("/urls");
+  } else {
+    return res.status(403).send("You are not authorised to delete a URL");
+  }
+
+});
+
+
+// GET /login
 app.get("/login", (req, res) => {
-  const userID = [req.session.user_id];
+  const userID = req.session.user_id;
   const templateVars = {
     user: userDatabase[userID],
     urls: urlDatabase[userID]
@@ -122,10 +168,17 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
+// GET /register
+app.get("/register", (req, res) => {
+  const userID = req.session.user_id;
+  const templateVars = {
+    user: userDatabase[userID],
+    urls: urlDatabase
+  };
+  return res.render("register", templateVars)
+});
 
-// LOGIN => After users enter their email and password
-// API (host: 'http://localhost:8080', method: 'POST', path: '/login')
-
+// POST '/login'
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -148,103 +201,35 @@ app.post("/login", (req, res) => {
 
 });
 
-// LOGOUT = > after user clicks logout button
-// API (host: 'http://localhost:8080', method: 'POST', path: '/logout')
+
+// POST /register
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  // checking if email or passwords blank
+  if (!email || !password) {
+    return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>"');
+  } 
+  // checking if email already exists  
+  if (getUserByEmail(email, userDatabase)) {
+    return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>"')
+  }
+  // Adding a new user data to the database
+  const newID = generateRandomString();
+  userDatabase[newID] = {
+    userID: newID,
+    email: email,
+    password: bcrypt.hashSync(password, 10)
+  };
+  req.session.user_id = "userID";
+  res.redirect("/urls");
+});
+
+
+// POST /logout
 app.post("/logout", (req, res) => {
   req.session = null;
   return res.redirect("/urls");
-});
-
-
-// My URLs page
-// API (host: 'http://localhost:8080', method: 'GET', path: '/urls')
-
-app.get("/urls", (req, res) => {
-  const userID = [req.session.user_id];
-  const user = userDatabase[userID];
-  
-  if (!user) {
-    return res.status(403).send('Please <a href="/login">Login</a> to see the URLs"');
-  }
-
-  const urls = getUserUrls(userID);
-  const templateVars = {urls, user};
-  
-  res.render("urls_index", templateVars);
-});
-
-// Page with create new longURL form
-//API (host: 'http://localhost:8080', method: 'GET', path: '/urls/new')
-
-app.get("/urls/new", (req, res) => {
-  const userID = [req.session.user_id];
-  if (isUserLoggedIn(userID, userDatabase)) {
-    const templateVars = {
-      user: userDatabase[userID],
-    }
-    res.render("urls_new", templateVars);
-  } else {
-    res.send("not working right")
-  }
-});
-
-// Creating a new LongURL
-// API (host: 'http://localhost:8080', method: 'POST', path: '/urls')
-
-app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString();
-
-  urlDatabase[shortURL] = {
-    longURL: req.body.longURL,
-    userID: [req.session.user_id]
-  }
-  return res.redirect(`/u/${shortURL}`);
-});
-
-// Redirect after creating a new LongURL
-// API (host: 'http://localhost:8080', method: 'get', path: '/u/:shortURL')
-
-app.get("/u/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
-
-  if (longURL) {
-    const userID = [req.session.user_id];
-    const templateVars = {
-      user: userDatabase[userID],
-      shortURL: shortURL,
-      longURL: longURL
-    };
-    res.render("urls_show", templateVars);
-  } else {
-    return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`)
-  }
-});
-
-
-// Edit an existing LongURL
-// API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL')
-
-app.post("/urls/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  const newLongURL = req.body.longURL;
-  urlDatabase[shortURL].longURL = newLongURL;
-  return res.redirect("/urls");
-});
-
-// DELETE an existing URL
-// API (host: 'http://localhost:8080', method: 'POST', path: '/urls/:shortURL/delete')
-
-app.post("/urls/:shortURL/delete", (req, res) => {
-  const userID = [req.session.user_id];
-  if (isUserLoggedIn(userID, userDatabase)) {
-    const shortURL = req.params.shortURL;
-    delete urlDatabase[shortURL];
-    return res.redirect("/urls");
-  } else {
-    return res.status(403).send("You are not authorised to delete a URL");
-  }
-
 });
 
 

@@ -24,11 +24,7 @@
         </tr>
       </thead>
       <tbody>
-        <% if (!user) { %>
-          <div class="alert alert-info" role="alert">
-              Please <a href="/login" class="alert-link" >Sign In</a> or <a href="/register" class="alert-link">Create an Account</a> to see your URLs.
-          </div>
-        <% } else { %>
+        <% if (user) { %>
         <% for(let url in urls) { %>
         <tr>
           <td><%= url %></td>

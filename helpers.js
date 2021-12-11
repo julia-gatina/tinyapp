@@ -3,7 +3,7 @@ const res = require("express/lib/response");
 // Function to check if user is logged in
 const isUserLoggedIn = function(userID, userDatabase) {
   for (const key in userDatabase) {
-    if (key == userID) {
+    if (key === userID) {
       return true;
     } 
     return false;
