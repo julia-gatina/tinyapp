@@ -12,7 +12,6 @@ app.set("view engine", "ejs");
 const {
   getUserByEmail,
   generateRandomString,
-  isUserLoggedIn,
   getUserUrls
 } = require("./helpers");
 
@@ -66,22 +65,22 @@ app.use(cookieSession({
 // ROUTES (runs when matching run is found)
 //
 
-// GET / -> redirects to urls if logged in or else to urls +
+// GET / -> redirects to urls if logged in or else to urls
 app.get("/", (req, res) => {
   userID = req.session.user_id;
-  if (!isUserLoggedIn(userID, userDatabase)) {
+  if (!userDatabase.userID) {
     return res.redirect("/login");
   } 
    res.redirect("/urls");
 });
 
-// GET /urls +
+// GET /urls 
 app.get("/urls", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
   
   if (!user) {
-    return res.status(403).send('Please <a href="/login">Login</a> to see the URLs');
+    return res.status(403).send('Please <a href="/login">Login</a> to see the URLs.');
   }
 
   const urls = getUserUrls(userID, urlDatabase);
@@ -90,18 +89,19 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-// GET /urls/new
+// GET /urls/new 
 app.get("/urls/new", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
-  if (!isUserLoggedIn(userID, userDatabase)) {
-    return res.status(403).send('Please <a href="/login">Login</a> to be able to create new URLs.');
+
+  if (!user) {
+    return res.redirect("/login");
   } 
     const templateVars = { user }
     res.render("urls_new", templateVars);
 });
 
-// GET /urls/:shortURL +
+// GET /urls/:shortURL
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
@@ -128,7 +128,7 @@ app.get("/urls/:shortURL", (req, res) => {
     res.render("urls_show", templateVars);
 });
 
-// GET /u/:shortURL +
+// GET /u/:shortURL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
@@ -141,35 +141,54 @@ app.get("/u/:shortURL", (req, res) => {
 
 // POST /urls
 app.post("/urls", (req, res) => {
+  const userID = req.session.user_id;
   const shortURL = generateRandomString();
+
+  if (!userDatabase.userID) {
+    return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
+  }
 
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
     userID: req.session.user_id
   }
-  return res.redirect(`/u/${shortURL}`);
+  return res.redirect(`/urls/${shortURL}`);
 });
 
 // POST /urls/:shortURL => Edit
-
 app.post("/urls/:shortURL", (req, res) => {
+  const userID = req.session.user_id
   const shortURL = req.params.shortURL;
   const newLongURL = req.body.longURL;
+
+  if (!userDatabase.userID) {
+    return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
+  }
+  
+  const expectedUserID = urlDatabase[shortURL].userID
+  if (expectedUserID !== userID) {
+    return res.status(403).send('You are not authorised to edit this URL. <a href="/urls">Return to URLs</a>.');
+  }
+
   urlDatabase[shortURL].longURL = newLongURL;
   return res.redirect("/urls");
 });
 
 // POST /urls/:shortURL/delete => Delete
-
 app.post("/urls/:shortURL/delete", (req, res) => {
   const userID = req.session.user_id;
-  if (isUserLoggedIn(userID, userDatabase)) {
-    const shortURL = req.params.shortURL;
-    delete urlDatabase[shortURL];
-    return res.redirect("/urls");
-  } else {
+  const shortURL = req.params.shortURL;
+
+  if (!userDatabase.userID) {
     return res.status(403).send("You are not authorised to delete a URL");
   }
+  
+  const expectedUserID = urlDatabase[shortURL].userID
+  if (expectedUserID !== userID) {
+    return res.status(403).send('You are not authorised to delete this URL. <a href="/urls">Return to URLs.</a>.');
+  }
+    delete urlDatabase[shortURL];
+    return res.redirect("/urls");
 
 });
 
@@ -177,6 +196,11 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 // GET /login
 app.get("/login", (req, res) => {
   const userID = req.session.user_id;
+
+  if (userDatabase.userID) {
+    return res.redirect("/urls");
+  }
+
   const templateVars = {
     user: userDatabase[userID],
     urls: urlDatabase[userID]
@@ -187,11 +211,12 @@ app.get("/login", (req, res) => {
 // GET /register
 app.get("/register", (req, res) => {
   const userID = req.session.user_id;
-  const templateVars = {
-    user: userDatabase[userID],
-    urls: urlDatabase
-  };
-  return res.render("register", templateVars)
+
+  if(userID) {
+    return res.redirect("/urls");
+  }
+
+  return res.render("register", {user: null})
 });
 
 // POST '/login'
@@ -204,17 +229,12 @@ app.post("/login", (req, res) => {
   }
   const foundUserObject = getUserByEmail(email, userDatabase);
 
-  if (!foundUserObject) {
-    return res.status(403).send('Unvalid credentials. Please <a href="/register"> try again. </a>"');
+  if (!foundUserObject || !bcrypt.compareSync(password, foundUserObject.password)) {
+    return res.status(403).send('Unvalid credentials. Please <a href="/login">try again.</a>');
   }
-  // check password
-  if (bcrypt.compareSync(password, foundUserObject.password)) {
-    req.session.user_id = foundUserObject.userID;
-    res.redirect("/urls");
-  } else {
-    return res.status(403).send('Wrong password. Please <a href="/register"> try again. </a>"')
-  }
-
+  
+  req.session.user_id = foundUserObject.userID;
+  res.redirect("/urls");
 });
 
 
@@ -222,27 +242,27 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  // checking if email or passwords blank
+  
   if (!email || !password) {
-    return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>"');
+    return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>');
   } 
   // checking if email already exists  
   if (getUserByEmail(email, userDatabase)) {
-    return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>"')
+    return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>')
   }
   // Adding a new user data to the database
-  const newID = generateRandomString();
-  userDatabase[newID] = {
-    userID: newID,
+  const newUserID = generateRandomString();
+  userDatabase[newUserID] = {
+    userID: newUserID,
     email: email,
     password: bcrypt.hashSync(password, 10)
   };
-  req.session.user_id = "userID";
+  req.session.user_id = newUserID;
   res.redirect("/urls");
 });
 
 
-// POST /logout +
+// POST /logout
 app.post("/logout", (req, res) => {
   req.session = null;
   return res.redirect("/urls");

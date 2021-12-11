@@ -1,15 +1,5 @@
 const res = require("express/lib/response");
 
-// Function to check if user is logged in
-const isUserLoggedIn = function(userID, userDatabase) {
-  for (const key in userDatabase) {
-    if (key === userID) {
-      return true;
-    } 
-    return false;
-  }
-}
-
 // function to fetch user data from database by email
 
 const getUserByEmail = function(email, userDatabase) {
@@ -23,7 +13,7 @@ const getUserByEmail = function(email, userDatabase) {
   return null;
 };
 
-// Function to 
+// Function to get URLs that belong to a certain user, returns whole user object
 const getUserUrls = function(id, urlDatabase) {
   const usersUrls = {};
 
@@ -36,12 +26,15 @@ const getUserUrls = function(id, urlDatabase) {
   return usersUrls;
 };
 
-// Function to Generate a Random ShortURL (used for shortURL and user ids)
+
+// Function to Generate a Random ShortURL (used for shortURLs and user IDs)
 
 const generateRandomString = function() {
   const generatedRandomString = Math.random().toString(16).substring(2, 8);
   return generatedRandomString;
 };
+
+
 
 
 module.exports = {
