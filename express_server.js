@@ -6,8 +6,8 @@ const bcrypt = require("bcryptjs");
 const app = express();
 app.set("view engine", "ejs");
 
-const urlDatabase = require("./data/urlDatabase");
-const userDatabase = require("./data/userDatabase");
+const { urlDatabase } = require("./data/urlDatabase");
+const { userDatabase } = require("./data/userDatabase");
 const {
   getUserByEmail,
   generateRandomString,
@@ -221,7 +221,7 @@ app.post("/login", (req, res) => {
   if (!email || !password) {
     return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>"');
   }
-  const foundUserObject = getUserByEmail(email, userDatabase);
+  const foundUserObject = getUserByEmail(email);
 
   // check if email and password match
   if (!foundUserObject || !bcrypt.compareSync(password, foundUserObject.password)) {

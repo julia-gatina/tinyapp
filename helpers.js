@@ -1,9 +1,12 @@
 const res = require("express/lib/response");
+const { userDatabase } = require("./data/userDatabase");
+const { urlDatabase } = require("./data/urlDatabase");
 
 // function to fetch user data from database by email, returns whole user object.
 
-const getUserByEmail = function(email, userDatabase) {
+const getUserByEmail = function(email) {
   for (const key in userDatabase) {
+    console.log("this is key - :", key)
     const user = userDatabase[key];
     if (user.email === email) {
       //returns whole user object
@@ -14,7 +17,7 @@ const getUserByEmail = function(email, userDatabase) {
 };
 
 // Function to get URLs that belong to a certain user, returns an object.
-const getUserUrls = function(id, urlDatabase) {
+const getUserUrls = function(id) {
   const usersUrls = {};
 
   for (const shortURL in urlDatabase) {
