@@ -1,48 +1,19 @@
 const PORT = 8080;
-const express = require('express');
-const morgan = require("morgan");
+const express = require("express");
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
-
-const bcrypt = require('bcryptjs');
-
+const bcrypt = require("bcryptjs");
 const app = express();
 app.set("view engine", "ejs");
 
+const urlDatabase = require("./data/urlDatabase");
+const userDatabase = require("./data/userDatabase");
 const {
   getUserByEmail,
   generateRandomString,
   getUserUrls
 } = require("./helpers");
 
-//
-// DATA
-//
-const urlDatabase = {
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "d6e252"
-  },
-  e99551: {
-    longURL: "https://www.w3schools.com",
-    userID: '172b17'
-  }
-};
-
-const userDatabase = {
-  "d6e252": {
-    userID: 'd6e252',
-    email: 'test@test.com',
-    // password test
-    password: '$2a$10$DVgwkXyAQwkDa2xN37erDe.rQ5S1Tj/cTHde4YUK08MwENYTrMrk.'
-  },
-  "172b17": {
-    userID: '172b17',
-    email: '123@123.com',
-    //password 123
-    password: '$2a$10$ADVm5tdjMvLf/XOJ9tfQ7u0iVJzGFwOHgZVy8a4j8WE5GpAqvFhke'
-  }
-};
 
 //
 // MIDDLEWARE (runs for every request)
@@ -50,8 +21,6 @@ const userDatabase = {
 app.use(bodyParser.urlencoded({
   extended: true
 }));
-
-app.use(morgan("dev"));
 
 app.use(cookieSession({
   name: 'session',
@@ -81,7 +50,7 @@ app.get("/urls", (req, res) => {
   const userID = req.session.user_id;
   const user = userDatabase[userID];
 
-  // if user is not logged in, app send a msg to log in and will not show URLs
+  // if user is not logged in, app sends a msg to log in and will not show URLs
   if (!user) {
     return res.status(403).send('Please <a href="/login">Login</a> to see the URLs.');
   }
