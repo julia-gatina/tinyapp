@@ -8,11 +8,7 @@ app.set("view engine", "ejs");
 
 const { urlDatabase } = require("./data/urlDatabase");
 const { userDatabase } = require("./data/userDatabase");
-const {
-  getUserByEmail,
-  generateRandomString,
-  getUserUrls
-} = require("./helpers");
+const { getUserByEmail, generateRandomString, getUserUrls, doesURLbelongToUser } = require("./helpers");
 
 
 //
@@ -55,7 +51,7 @@ app.get("/urls", (req, res) => {
     return res.status(403).send('Please <a href="/login">Login</a> to see the URLs.');
   }
 
-  const urls = getUserUrls(userID, urlDatabase);
+  const urls = getUserUrls(userID);
   const templateVars = {
     urls,
     user
@@ -91,14 +87,9 @@ app.get("/urls/:shortURL", (req, res) => {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
 
-  //if a URL doesn't belong to this user, he can'e edit it
-  if (!urlDatabase[shortURL].userID === userID) {
-    return res.status(403).send('You are not authorized to edit this URL. <a href="/urls">Return to URLs.</a>.');
-  }
-
-  // if url does not exists
-  if (!longURL) {
-    return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
+  // check is this url belongs to logged in user
+  if(!doesURLbelongToUser(userID, shortURL)) {
+    return res.status(403).send('You are not authorized to perform actions on this URL. <a href="/urls">Return to URLs.</a>.');
   }
 
   const templateVars = {
@@ -113,11 +104,18 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL].longURL;
+  const userID = req.params.shortURL;
 
   // error if URL is not found
-  if (!longURL) {
+  if (!longURL || !shortURL) {
     return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
+
+  // check is this url belongs to logged in user
+  if(!doesURLbelongToUser(userID, shortURL)) {
+    return res.status(403).send('You are not authorized to perform actions on this URL. <a href="/urls">Return to URLs.</a>.');
+  }
+
   res.redirect(longURL);
 });
 
@@ -153,10 +151,9 @@ app.post("/urls/:shortURL", (req, res) => {
     return res.status(403).send('Please <a href="/login">Login</a> to be able to edit URLs.');
   }
 
-  // check if this URL belongs to the user
-  const expectedUserID = urlDatabase[shortURL].userID;
-  if (expectedUserID !== userID) {
-    return res.status(403).send('You are not authorised to edit this URL. <a href="/urls">Return to URLs</a>.');
+  // check is this url belongs to logged in user
+  if(!doesURLbelongToUser(userID, shortURL)) {
+    return res.status(403).send('You are not authorized to perform actions on this URL. <a href="/urls">Return to URLs.</a>.');
   }
 
   urlDatabase[shortURL].longURL = newLongURL;
@@ -171,14 +168,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
   // check if user is logged in
   if (!user) {
-    return res.status(403).send("You are not authorised to delete a URL");
+    return res.status(403).send('Please <a href="/login">Login</a> to be able to delete URLs.');
   }
 
-  // check if this URL belongs to the user
-  const expectedUserID = urlDatabase[shortURL].userID;
-  if (expectedUserID !== userID) {
-    return res.status(403).send('You are not authorised to delete this URL. <a href="/urls">Return to URLs.</a>.');
+  // check is this url belongs to logged in user
+  if(!doesURLbelongToUser(userID, shortURL)) {
+    return res.status(403).send('You are not authorized to perform actions on this URL. <a href="/urls">Return to URLs.</a>.');
   }
+
   delete urlDatabase[shortURL];
   return res.redirect("/urls");
 
@@ -209,7 +206,9 @@ app.get("/register", (req, res) => {
   if (userID) {
     return res.redirect("/urls");
   }
-  return res.render("register", { user: null })
+  return res.render("register", {
+    user: null
+  })
 });
 
 // POST '/login'
@@ -219,7 +218,7 @@ app.post("/login", (req, res) => {
 
   // check if email or password empty
   if (!email || !password) {
-    return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>"');
+    return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>');
   }
   const foundUserObject = getUserByEmail(email);
 
@@ -242,12 +241,12 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     return res.status(400).send('Email and / or password cannot be blank. Please <a href="/register"> try again. </a>');
   }
-   
+
   // check if this email already exists
-  if (getUserByEmail(email, userDatabase)) {
+  if (getUserByEmail(email)) {
     return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>')
   }
-  
+
   const newUserID = generateRandomString();
   userDatabase[newUserID] = {
     userID: newUserID,

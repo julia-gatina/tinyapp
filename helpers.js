@@ -6,7 +6,6 @@ const { urlDatabase } = require("./data/urlDatabase");
 
 const getUserByEmail = function(email) {
   for (const key in userDatabase) {
-    console.log("this is key - :", key)
     const user = userDatabase[key];
     if (user.email === email) {
       //returns whole user object
@@ -29,6 +28,16 @@ const getUserUrls = function(id) {
   return usersUrls;
 };
 
+// function to check if URL belongs to the user
+const doesURLbelongToUser = function (userID, shortURL) {
+  let status = false;
+  const expectedUserID = urlDatabase[shortURL].userID;
+  if (expectedUserID === userID) {
+    status = true;
+  }
+  return status;
+}
+
 // Function to Generate a Random ShortURL (used for shortURLs and user IDs)
 const generateRandomString = function() {
   const generatedRandomString = Math.random().toString(16).substring(2, 8);
@@ -39,5 +48,7 @@ const generateRandomString = function() {
 module.exports = {
   getUserByEmail,
   generateRandomString,
-  getUserUrls
+  getUserUrls,
+  doesURLbelongToUser
+
 };
