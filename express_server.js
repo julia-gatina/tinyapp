@@ -78,9 +78,14 @@ app.get("/urls/new", (req, res) => {
 // GET /urls/:shortURL (only for logged in users)
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL].longURL;
-  const userID = req.session.user_id;
-  const user = userDatabase[userID];
+  // check if shortURL is existing in database to exclude error
+  if (!urlDatabase[shortURL]) {
+    return res.status(403).send('Error, please try again. <a href="/urls">Back to URLs</a>.')
+  }
+  
+    const longURL = urlDatabase[shortURL].longURL;
+    const userID = req.session.user_id;
+    const user = userDatabase[userID];
 
   //If user not logged in, display a message to log in
   if (!user) {
@@ -91,6 +96,11 @@ app.get("/urls/:shortURL", (req, res) => {
   if(!doesURLbelongToUser(userID, shortURL)) {
     return res.status(403).send('You are not authorized to perform actions on this URL. <a href="/urls">Return to URLs.</a>.');
   }
+
+    // error if URL is not found
+    if (!longURL) {
+      return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
+    }
 
   const templateVars = {
     user: user,
@@ -103,11 +113,15 @@ app.get("/urls/:shortURL", (req, res) => {
 // GET /u/:shortURL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
+  // check if shortURL is existing in database to exclude error
+  if (!urlDatabase[shortURL]) {
+    return res.status(403).send('Error, please try again. <a href="/urls">Back to URLs</a>.')
+  }
   const longURL = urlDatabase[shortURL].longURL;
-  const userID = req.params.shortURL;
+  const userID = req.session.user_id;
 
   // error if URL is not found
-  if (!longURL || !shortURL) {
+  if (!longURL) {
     return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
 
@@ -244,7 +258,7 @@ app.post("/register", (req, res) => {
 
   // check if this email already exists
   if (getUserByEmail(email)) {
-    return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>')
+    return res.status(400).send('User with this email address already exists. Please <a href="/register"> try again. </a>');
   }
 
   const newUserID = generateRandomString();

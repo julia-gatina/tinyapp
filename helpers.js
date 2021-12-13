@@ -20,7 +20,7 @@ const getUserUrls = function(id) {
   const usersUrls = {};
 
   for (const shortURL in urlDatabase) {
-    const urlObj = urlDatabase[shortURL]
+    const urlObj = urlDatabase[shortURL];
     if (urlObj.userID === id) {
       usersUrls[shortURL] = urlObj;
     }
@@ -36,7 +36,7 @@ const doesURLbelongToUser = function (userID, shortURL) {
     status = true;
   }
   return status;
-}
+};
 
 // Function to Generate a Random ShortURL (used for shortURLs and user IDs)
 const generateRandomString = function() {
