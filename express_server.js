@@ -78,7 +78,8 @@ app.get("/urls/new", (req, res) => {
 // GET /urls/:shortURL (only for logged in users)
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  // check if shortURL is existing in database to exclude error
+
+  // check if shortURL is exists in database to exclude error
   if (!urlDatabase[shortURL]) {
     return res.status(403).send('Error, please try again. <a href="/urls">Back to URLs</a>.')
   }
@@ -113,7 +114,8 @@ app.get("/urls/:shortURL", (req, res) => {
 // GET /u/:shortURL
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  // check if shortURL is existing in database to exclude error
+
+  // check if shortURL exists in database to exclude error
   if (!urlDatabase[shortURL]) {
     return res.status(403).send('Error, please try again. <a href="/urls">Back to URLs</a>.')
   }
