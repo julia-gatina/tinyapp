@@ -111,7 +111,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-// GET /u/:shortURL
+// GET /u/:shortURL (accesible for any users)
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
 
@@ -120,18 +120,11 @@ app.get("/u/:shortURL", (req, res) => {
     return res.status(403).send('Error, please try again. <a href="/urls">Back to URLs</a>.')
   }
   const longURL = urlDatabase[shortURL].longURL;
-  const userID = req.session.user_id;
 
-  // error if URL is not found
+  // error if longURL is not found
   if (!longURL) {
     return res.status(400).send(`URL for given shortURL: "${shortURL}" is not found. Try another one.`);
   }
-
-  // check is this url belongs to logged in user
-  if(!doesURLbelongToUser(userID, shortURL)) {
-    return res.status(403).send('You are not authorized to perform actions on this URL. <a href="/urls">Return to URLs.</a>.');
-  }
-
   res.redirect(longURL);
 });
 
